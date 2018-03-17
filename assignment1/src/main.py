@@ -2,22 +2,25 @@ import csv
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import norm
+from scipy import stats
+from sklearn.metrics import accuracy_score
+
+number_features = 51
 
 
 def main():
     # number of iterations
-    number_of_iterations = 10000
+    number_of_iterations = 50
 
     # definition of X's and Y's
-    x_matrix = np.empty((0, 59), dtype=float)
+    x_matrix = np.empty((0, number_features), dtype=float)
     y_array = np.array([])
 
     # learning rate
     alpha = 0.01
 
     # populate X's and Y's with the given csv file
-    csv_line = read_csv_file('../data/sample.csv')
+    csv_line = read_csv_file('../data/train.csv')
     for row in csv_line:
         x_row, y = read_x_values_from_row(row)
         x_matrix = np.append(x_matrix, x_row, axis=0)
@@ -33,15 +36,33 @@ def main():
     print("Thetas:\n {}".format(thetas))
     print("Losses:\n {}".format(losses))
 
-    # apply the function with the new thetas
-    validate_thetas()
-
     # show the cost over iterations
     plot_cost_function_x_iterations(number_of_iterations, losses)
 
+    # apply the function with the new thetas
+    validate_thetas(thetas)
 
-def validate_thetas():
-    print("Validating thetas")
+
+def validate_thetas(thetas):
+    # definition of X's and Y's for testing
+    test_x_matrix = np.empty((0, number_features), dtype=float)
+    test_y_array = np.array([])
+
+    # read values for X's from the test csv
+    test_x_csv_line = read_csv_file('../data/test.csv')
+    for row in test_x_csv_line:
+        x_row, y = read_x_values_from_row(row)
+        test_x_matrix = np.append(test_x_matrix, x_row, axis=0)
+
+    # read values for Y's from the test csv
+    test_y_csv_line = read_csv_file('../data/test_target.csv')
+    for row in test_y_csv_line:
+        test_y_array = np.append(test_y_array, int(row['shares']))
+
+    predictions = np.dot(test_x_matrix, thetas)
+    # print(predictions.round())
+    # print(test_y_array)
+    print("Accuracy: {}".format(accuracy_score(test_y_array, predictions.round())))
 
 
 def gradient_descent(alpha, x, y, number_of_interations):
@@ -49,7 +70,7 @@ def gradient_descent(alpha, x, y, number_of_interations):
     m = x.shape[0]
 
     # definition of the first thetas, the default value is one for all the thetas
-    thetas = np.array(59 * [1]).transpose()
+    thetas = np.array(number_features * [1]).transpose()
 
     # transpose X's for gradient descent
     transposed_x = x.transpose()
@@ -99,14 +120,14 @@ def read_x_values_from_row(row=None):
             float(row['data_channel_is_socmed']),
             float(row['data_channel_is_tech']),
             float(row['data_channel_is_world']),
-            float(row['kw_min_min']),
-            float(row['kw_max_min']),
-            float(row['kw_avg_min']),
-            float(row['kw_min_max']),
-            float(row['kw_max_max']),
-            float(row['kw_avg_max']),
-            float(row['kw_min_avg']),
-            float(row['kw_max_avg']),
+            # float(row['kw_min_min']),
+            # float(row['kw_max_min']),
+            # float(row['kw_avg_min']),
+            # float(row['kw_min_max']),
+            # float(row['kw_max_max']),
+            # float(row['kw_avg_max']),
+            # float(row['kw_min_avg']),
+            # float(row['kw_max_avg']),
             float(row['kw_avg_avg']),
             float(row['self_reference_min_shares']),
             float(row['self_reference_max_shares']),
@@ -143,15 +164,21 @@ def read_x_values_from_row(row=None):
         ]])
 
         # normalize the features
-        norm_x_row = norm.pdf(x_row)
+        # norm_x_row = stats.norm.pdf(x_row)
+        norm_x_row = stats.zscore(x_row, axis=1, ddof=1)
 
         # append the X0 value for theta 0
         norm_x_row = np.append([[1]], norm_x_row)
-        norm_x_row = norm_x_row.reshape((1, 59))
+        norm_x_row = norm_x_row.reshape((1, number_features))
 
-        return norm_x_row, int(row['shares'])
+        if 'shares' in row.keys():
+            y = int(row['shares'])
+        else:
+            y = 0
+
+        return norm_x_row, y
     else:
-        return np.empty((0, 59)), 0
+        return np.empty((0, number_features)), 0
 
 
 def plot_cost_function_x_iterations(number_of_iterations, losses):
