@@ -1,5 +1,13 @@
 
-O que precisa ser feito:
+Activities
+    1. Perform linear regression as the baseline (first solution) and devise LR-based alternative (more powerful) solutions.
+    2. Use the specified train/test data for providing your results and avoid overfitting.
+    3. Devise and test more complex models.
+    4. Plot the cost function vs. number of iterations in the training set and analyze the model complexity. What are the conclusions? What are the actions after such analyses?
+    5. Use different Gradient Descent learning rates when optimizing. Compare the GD-based solutions with Normal Equations if possible (perhaps you should try with smaller sample sizes for this task). What are the conclusions?
+    6. Pay attention to the variables that are DISCRETE. You need to take care of them.
+    7. Prepare a 4-page (max.) report with all your findings. It is UP TO YOU to convince the reader that you are proficient in the regression subject and the choices related to this particular subject.
 
-    
-
+References
+    http://www.bogotobogo.com/python/python_numpy_batch_gradient_descent_algorithm.php
+    https://www.pyimagesearch.com/2016/10/10/gradient-descent-with-python/
