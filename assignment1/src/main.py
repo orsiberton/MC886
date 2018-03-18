@@ -5,7 +5,9 @@ import numpy as np
 from scipy import stats
 from sklearn.metrics import accuracy_score
 
-number_features = 51
+# from sklearn import preprocessing
+
+number_features = 59
 
 
 def main():
@@ -13,18 +15,23 @@ def main():
     number_of_iterations = 50
 
     # definition of X's and Y's
-    x_matrix = np.empty((0, number_features), dtype=float)
+    x_matrix = np.empty((0, number_features - 1), dtype=float)
     y_array = np.array([])
 
     # learning rate
     alpha = 0.01
 
     # populate X's and Y's with the given csv file
-    csv_line = read_csv_file('../data/train.csv')
+    csv_line = read_csv_file('../data/sample.csv')
     for row in csv_line:
         x_row, y = read_x_values_from_row(row)
         x_matrix = np.append(x_matrix, x_row, axis=0)
         y_array = np.append(y_array, y)
+
+    x_matrix = stats.zscore(x_matrix, axis=1, ddof=1)
+    x0 = np.array(x_matrix.shape[0] * [1]).transpose().reshape((x_matrix.shape[0], 1))
+    x_matrix = np.append(x0, x_matrix, axis=1)
+    print(x_matrix)
 
     print("Number of iterations: {}".format(number_of_iterations))
     print("Number of training examples: {}".format(x_matrix.shape[0]))
@@ -39,13 +46,16 @@ def main():
     # show the cost over iterations
     plot_cost_function_x_iterations(number_of_iterations, losses)
 
+    thetas2 = normal_equation(x_matrix, y_array)
+    print(thetas2)
+
     # apply the function with the new thetas
     validate_thetas(thetas)
 
 
 def validate_thetas(thetas):
     # definition of X's and Y's for testing
-    test_x_matrix = np.empty((0, number_features), dtype=float)
+    test_x_matrix = np.empty((0, number_features - 1), dtype=float)
     test_y_array = np.array([])
 
     # read values for X's from the test csv
@@ -53,6 +63,9 @@ def validate_thetas(thetas):
     for row in test_x_csv_line:
         x_row, y = read_x_values_from_row(row)
         test_x_matrix = np.append(test_x_matrix, x_row, axis=0)
+
+    x0 = np.array(test_x_matrix.shape[0] * [1]).transpose().reshape((test_x_matrix.shape[0], 1))
+    test_x_matrix = np.append(x0, test_x_matrix, axis=1)
 
     # read values for Y's from the test csv
     test_y_csv_line = read_csv_file('../data/test_target.csv')
@@ -63,6 +76,8 @@ def validate_thetas(thetas):
     # print(predictions.round())
     # print(test_y_array)
     print("Accuracy: {}".format(accuracy_score(test_y_array, predictions.round())))
+    for i in range(0, predictions.size):
+        print("Prediction: {} | Y: {}".format(round(predictions[i]), test_y_array[i]))
 
 
 def gradient_descent(alpha, x, y, number_of_interations):
@@ -70,7 +85,8 @@ def gradient_descent(alpha, x, y, number_of_interations):
     m = x.shape[0]
 
     # definition of the first thetas, the default value is one for all the thetas
-    thetas = np.array(number_features * [1]).transpose()
+    # thetas = np.array(number_features * [random.randint(1000, 10000)]).transpose()
+    thetas = np.transpose(np.random.rand(number_features) * 10)
 
     # transpose X's for gradient descent
     transposed_x = x.transpose()
@@ -98,6 +114,15 @@ def gradient_descent(alpha, x, y, number_of_interations):
     return thetas, losses
 
 
+def normal_equation(x, y):
+    matrix = np.dot(x.transpose(), x)
+    matrix = np.linalg.pinv(matrix)
+    matrix = np.dot(matrix, x.transpose())
+    matrix = np.dot(matrix, y)
+
+    return matrix
+
+
 def read_x_values_from_row(row=None):
     if row:
 
@@ -114,24 +139,26 @@ def read_x_values_from_row(row=None):
             float(row['num_videos']),
             float(row['average_token_length']),
             float(row['num_keywords']),
+            # float(row['data_channel_is_lifestyle']) + float(row['data_channel_is_entertainment']) + float(row['data_channel_is_bus']) + float(row['data_channel_is_socmed']) + float(row['data_channel_is_tech']) + float(row['data_channel_is_world']),
             float(row['data_channel_is_lifestyle']),
             float(row['data_channel_is_entertainment']),
             float(row['data_channel_is_bus']),
             float(row['data_channel_is_socmed']),
             float(row['data_channel_is_tech']),
             float(row['data_channel_is_world']),
-            # float(row['kw_min_min']),
-            # float(row['kw_max_min']),
-            # float(row['kw_avg_min']),
-            # float(row['kw_min_max']),
-            # float(row['kw_max_max']),
-            # float(row['kw_avg_max']),
-            # float(row['kw_min_avg']),
-            # float(row['kw_max_avg']),
+            float(row['kw_min_min']),
+            float(row['kw_max_min']),
+            float(row['kw_avg_min']),
+            float(row['kw_min_max']),
+            float(row['kw_max_max']),
+            float(row['kw_avg_max']),
+            float(row['kw_min_avg']),
+            float(row['kw_max_avg']),
             float(row['kw_avg_avg']),
             float(row['self_reference_min_shares']),
             float(row['self_reference_max_shares']),
             float(row['self_reference_avg_sharess']),
+            # float(row['weekday_is_monday']) + float(row['weekday_is_tuesday']) + float(row['weekday_is_wednesday']) + float(row['weekday_is_thursday']) + float(row['weekday_is_friday']) + float(row['weekday_is_saturday']) + float(row['weekday_is_sunday']) + float(row['is_weekend']),
             float(row['weekday_is_monday']),
             float(row['weekday_is_tuesday']),
             float(row['weekday_is_wednesday']),
@@ -163,22 +190,14 @@ def read_x_values_from_row(row=None):
             float(row['abs_title_sentiment_polarity'])
         ]])
 
-        # normalize the features
-        # norm_x_row = stats.norm.pdf(x_row)
-        norm_x_row = stats.zscore(x_row, axis=1, ddof=1)
-
-        # append the X0 value for theta 0
-        norm_x_row = np.append([[1]], norm_x_row)
-        norm_x_row = norm_x_row.reshape((1, number_features))
-
         if 'shares' in row.keys():
             y = int(row['shares'])
         else:
             y = 0
 
-        return norm_x_row, y
+        return x_row, y
     else:
-        return np.empty((0, number_features)), 0
+        return np.empty((0, number_features - 1)), 0
 
 
 def plot_cost_function_x_iterations(number_of_iterations, losses):
