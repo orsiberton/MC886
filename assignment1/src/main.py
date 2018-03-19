@@ -22,7 +22,7 @@ def main():
     alpha = 0.01
 
     # populate X's and Y's with the given csv file
-    csv_line = read_csv_file('../data/sample.csv')
+    csv_line = read_csv_file('../data/train.csv')
     for row in csv_line:
         x_row, y = read_x_values_from_row(row)
         x_matrix = np.append(x_matrix, x_row, axis=0)
@@ -64,6 +64,7 @@ def validate_thetas(thetas):
         x_row, y = read_x_values_from_row(row)
         test_x_matrix = np.append(test_x_matrix, x_row, axis=0)
 
+    test_x_matrix = stats.zscore(test_x_matrix, axis=1, ddof=1)
     x0 = np.array(test_x_matrix.shape[0] * [1]).transpose().reshape((test_x_matrix.shape[0], 1))
     test_x_matrix = np.append(x0, test_x_matrix, axis=1)
 
@@ -80,13 +81,14 @@ def validate_thetas(thetas):
         print("Prediction: {} | Y: {}".format(round(predictions[i]), test_y_array[i]))
 
 
-def gradient_descent(alpha, x, y, number_of_interations):
+def gradient_descent(alpha, x, y, number_of_iterations):
     # number of training examples
     m = x.shape[0]
 
     # definition of the first thetas, the default value is one for all the thetas
     # thetas = np.array(number_features * [random.randint(1000, 10000)]).transpose()
     thetas = np.transpose(np.random.rand(number_features) * 10)
+    #thetas = np.random.rand(number_features) * 1000
 
     # transpose X's for gradient descent
     transposed_x = x.transpose()
@@ -94,7 +96,7 @@ def gradient_descent(alpha, x, y, number_of_interations):
     # array with all the losses over iterations
     losses = np.array([])
 
-    for i in range(0, number_of_interations):
+    for i in range(0, number_of_iterations):
         # Hypothesis is the evaluation of the function
         hypothesis = np.dot(x, thetas)
 

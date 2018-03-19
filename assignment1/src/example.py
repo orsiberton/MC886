@@ -10,6 +10,7 @@ def gradient_descent_2(alpha, x, y, numIterations):
     x_transpose = x.transpose()
     print(x)
     print(x_transpose)
+    print(theta)
     for iter in range(0, numIterations):
         hypothesis = np.dot(x, theta)
         loss = hypothesis - y
@@ -18,6 +19,7 @@ def gradient_descent_2(alpha, x, y, numIterations):
         gradient = np.dot(x_transpose, loss) / m
         theta = theta - alpha * gradient  # update
     return theta
+
 
 if __name__ == '__main__':
 
