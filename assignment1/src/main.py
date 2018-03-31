@@ -5,19 +5,21 @@ import numpy as np
 from scipy import stats
 from sklearn.metrics import accuracy_score
 
-number_features = 59
+number_features = 89
 
 
 def main():
     # number of iterations
-    number_of_iterations = 5000
+    number_of_iterations = 10000
 
     # definition of X's and Y's
     x_matrix = np.empty((0, number_features - 1), dtype=float)
     y_array = np.array([])
 
     # learning rate
-    alpha = 0.01
+    alpha = 0.001
+    # regularization
+    regularization_lambda = 7
 
     # populate X's and Y's with the given csv file
     csv_line = read_csv_file('../data/train.csv')
@@ -34,15 +36,16 @@ def main():
     print("Number of training examples: {}".format(x_matrix.shape[0]))
     print("Number of training features: {}".format(x_matrix.shape[1] - 1))
     print("Learning rate: {}".format(alpha))
+    print("Regularization lambda: {}".format(regularization_lambda))
 
     # learn from the data
-    thetas, losses = gradient_descent(alpha, x_matrix, y_array, number_of_iterations)
+    thetas, losses = gradient_descent(alpha, regularization_lambda, x_matrix, y_array, number_of_iterations)
     print("Thetas:\n {}".format(thetas))
 
     # show the cost over iterations
     plot_cost_function_x_iterations(number_of_iterations, losses)
 
-    #thetas2 = normal_equation(x_matrix, y_array)
+    # thetas2 = normal_equation(x_matrix, y_array)
 
     # apply the function with the new thetas
     validate_thetas(thetas)
@@ -101,14 +104,13 @@ def calculate_error_percentage(predict, y):
     return percentage
 
 
-def gradient_descent(alpha, x, y, number_of_iterations):
+def gradient_descent(alpha, regularization_lambda, x, y, number_of_iterations):
     # number of training examples
     m = x.shape[0]
 
     # definition of the first thetas, the default value is one for all the thetas
-    # thetas = np.array(number_features * [random.randint(1000, 10000)]).transpose()
-    thetas = np.transpose(np.random.rand(number_features) * 10)
-    # thetas = np.random.rand(number_features) * 1000
+    thetas = np.transpose(np.random.rand(number_features) * 1000)
+    regularization_thetas = np.copy(thetas)
 
     # transpose X's for gradient descent
     transposed_x = x.transpose()
@@ -124,14 +126,18 @@ def gradient_descent(alpha, x, y, number_of_iterations):
         loss = hypothesis - y
 
         # calculate the cost function
-        cost_j = np.sum(loss ** 2) / (2 * m)
+        cost_j = (np.sum(loss ** 2) + (regularization_lambda * np.sum(regularization_thetas ** 2))) / (2 * m)
         losses = np.append(losses, cost_j)
 
+        # set zero for 'bias' theta
+        regularization_thetas[0] = 0
+
         # calculate the gradient descent
-        gradient = np.dot(transposed_x, loss) / m
+        gradient = (np.dot(transposed_x, loss) / m) + ((regularization_lambda / m) * regularization_thetas)
 
         # update all the thetas in the same time
         thetas = thetas - alpha * gradient
+        regularization_thetas = np.copy(thetas)
 
     return thetas, losses
 
@@ -159,12 +165,23 @@ def read_x_values_from_row(row=None):
             float(row['num_videos']),
             float(row['average_token_length']),
             float(row['num_keywords']),
-            float(row['data_channel_is_lifestyle']),
-            float(row['data_channel_is_entertainment']),
-            float(row['data_channel_is_bus']),
-            float(row['data_channel_is_socmed']),
-            float(row['data_channel_is_tech']),
-            float(row['data_channel_is_world']),
+            float(row['n_tokens_title']) * float(row['n_tokens_title']),
+            float(row['n_tokens_content']) * float(row['n_tokens_content']),
+            float(row['n_unique_tokens']) * float(row['n_unique_tokens']),
+            float(row['n_non_stop_words']) * float(row['n_non_stop_words']),
+            float(row['n_non_stop_unique_tokens']) * float(row['n_non_stop_unique_tokens']),
+            float(row['num_hrefs']) * float(row['num_hrefs']),
+            float(row['num_self_hrefs']) * float(row['num_self_hrefs']),
+            float(row['num_imgs']) * float(row['num_imgs']),
+            float(row['num_videos']) * float(row['num_videos']),
+            float(row['average_token_length']) * float(row['average_token_length']),
+            float(row['num_keywords']) * float(row['num_keywords']),
+            # float(row['data_channel_is_lifestyle']),
+            # float(row['data_channel_is_entertainment']),
+            # float(row['data_channel_is_bus']),
+            # float(row['data_channel_is_socmed']),
+            # float(row['data_channel_is_tech']),
+            # float(row['data_channel_is_world']),
             float(row['kw_min_min']),
             float(row['kw_max_min']),
             float(row['kw_avg_min']),
@@ -177,14 +194,26 @@ def read_x_values_from_row(row=None):
             float(row['self_reference_min_shares']),
             float(row['self_reference_max_shares']),
             float(row['self_reference_avg_sharess']),
-            float(row['weekday_is_monday']),
-            float(row['weekday_is_tuesday']),
-            float(row['weekday_is_wednesday']),
-            float(row['weekday_is_thursday']),
-            float(row['weekday_is_friday']),
-            float(row['weekday_is_saturday']),
-            float(row['weekday_is_sunday']),
-            float(row['is_weekend']),
+            float(row['kw_min_min']) * float(row['kw_min_min']),
+            float(row['kw_max_min']) * float(row['kw_max_min']),
+            float(row['kw_avg_min']) * float(row['kw_avg_min']),
+            float(row['kw_min_max']) * float(row['kw_min_max']),
+            float(row['kw_max_max']) * float(row['kw_max_max']),
+            float(row['kw_avg_max']) * float(row['kw_avg_max']),
+            float(row['kw_min_avg']) * float(row['kw_min_avg']),
+            float(row['kw_max_avg']) * float(row['kw_max_avg']),
+            float(row['kw_avg_avg']) * float(row['kw_avg_avg']),
+            float(row['self_reference_min_shares']) * float(row['self_reference_min_shares']),
+            float(row['self_reference_max_shares']) * float(row['self_reference_max_shares']),
+            float(row['self_reference_avg_sharess']) * float(row['self_reference_avg_sharess']),
+            # float(row['weekday_is_monday']),
+            # float(row['weekday_is_tuesday']),
+            # float(row['weekday_is_wednesday']),
+            # float(row['weekday_is_thursday']),
+            # float(row['weekday_is_friday']),
+            # float(row['weekday_is_saturday']),
+            # float(row['weekday_is_sunday']),
+            # float(row['is_weekend']),
             float(row['LDA_00']),
             float(row['LDA_01']),
             float(row['LDA_02']),
@@ -205,7 +234,28 @@ def read_x_values_from_row(row=None):
             float(row['title_subjectivity']),
             float(row['title_sentiment_polarity']),
             float(row['abs_title_subjectivity']),
-            float(row['abs_title_sentiment_polarity'])
+            float(row['abs_title_sentiment_polarity']),
+            float(row['LDA_00']) * float(row['LDA_00']),
+            float(row['LDA_01']) * float(row['LDA_01']),
+            float(row['LDA_02']) * float(row['LDA_02']),
+            float(row['LDA_03']) * float(row['LDA_03']),
+            float(row['LDA_04']) * float(row['LDA_04']),
+            float(row['global_subjectivity']) * float(row['global_subjectivity']),
+            float(row['global_sentiment_polarity']) * float(row['global_sentiment_polarity']),
+            float(row['global_rate_positive_words']) * float(row['global_rate_positive_words']),
+            float(row['global_rate_negative_words']) * float(row['global_rate_negative_words']),
+            float(row['rate_positive_words']) * float(row['rate_positive_words']),
+            float(row['rate_negative_words']) * float(row['rate_negative_words']),
+            float(row['avg_positive_polarity']) * float(row['avg_positive_polarity']),
+            float(row['min_positive_polarity']) * float(row['min_positive_polarity']),
+            float(row['max_positive_polarity']) * float(row['max_positive_polarity']),
+            float(row['avg_negative_polarity']) * float(row['avg_negative_polarity']),
+            float(row['min_negative_polarity']) * float(row['min_negative_polarity']),
+            float(row['max_negative_polarity']) * float(row['max_negative_polarity']),
+            float(row['title_subjectivity']) * float(row['title_subjectivity']),
+            float(row['title_sentiment_polarity']) * float(row['title_sentiment_polarity']),
+            float(row['abs_title_subjectivity']) * float(row['abs_title_subjectivity']),
+            float(row['abs_title_sentiment_polarity']) * float(row['abs_title_sentiment_polarity'])
         ]])
 
         if 'shares' in row.keys():
