@@ -54,12 +54,21 @@ def plot_confusion_matrix(score, y_validation, predictions):
 def read_values_from_row(row=None):
     if row:
         x_row = [
-            float(row['gaussian_variance']),
-            float(row['gaussian_kurtosis']),
-            float(row['gaussian_skew']),
-            float(row['denoised_variance']),
-            float(row['denoised_kurtoses']),
-            float(row['denoised_skew']),
+            float(row['red_band_mean']),
+            float(row['red_band_var']),
+            float(row['red_band_std']),
+            float(row['red_band_kurtosis']),
+            float(row['red_band_skew']),
+            float(row['green_band_mean']),
+            float(row['green_band_var']),
+            float(row['green_band_std']),
+            float(row['green_band_kurtosis']),
+            float(row['green_band_skew']),
+            float(row['blue_band_mean']),
+            float(row['blue_band_var']),
+            float(row['blue_band_std']),
+            float(row['blue_band_kurtosis']),
+            float(row['blue_band_skew'])
         ]
 
         if 'image_class' in row.keys():
