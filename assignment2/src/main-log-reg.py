@@ -22,6 +22,8 @@ def main():
     x_matrix = np.array(x_matrix)
     y_array = np.array(y_array)
 
+    print("Starting training...")
+
     # splits the train data into train and validation with validation being 20% of the original train data set
     x_train, x_validation, y_train, y_validation = train_test_split(x_matrix, y_array, test_size=0.20, random_state=0)
 
@@ -29,6 +31,8 @@ def main():
     classifier = LogisticRegression(solver='sag',
                                     max_iter=10000,
                                     multi_class='multinomial').fit(x_train, y_train)
+
+    print("Training done!")
 
     # validate the solution
     score = classifier.score(x_validation, y_validation)
@@ -53,28 +57,14 @@ def plot_confusion_matrix(score, y_validation, predictions):
 
 def read_values_from_row(row=None):
     if row:
-        x_row = [
-            float(row['red_band_mean']),
-            float(row['red_band_var']),
-            float(row['red_band_std']),
-            float(row['red_band_kurtosis']),
-            float(row['red_band_skew']),
-            float(row['green_band_mean']),
-            float(row['green_band_var']),
-            float(row['green_band_std']),
-            float(row['green_band_kurtosis']),
-            float(row['green_band_skew']),
-            float(row['blue_band_mean']),
-            float(row['blue_band_var']),
-            float(row['blue_band_std']),
-            float(row['blue_band_kurtosis']),
-            float(row['blue_band_skew'])
-        ]
+        x_row = []
+        y = -1
 
-        if 'image_class' in row.keys():
-            y = int(row['image_class'])
-        else:
-            y = -1
+        for key, value in row.items():
+            if key != 'image_class':
+                x_row.append(float(value))
+            else:
+                y = int(value)
 
         return x_row, y
     else:
