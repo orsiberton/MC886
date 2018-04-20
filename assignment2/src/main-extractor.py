@@ -1,14 +1,13 @@
 import csv
 import os
-
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
+from mahotas.features.lbp import lbp
 from scipy import misc
 from scipy.stats import kurtosis, skew
 from skimage import img_as_float
 from skimage.restoration import (denoise_wavelet)
-from concurrent.futures import ThreadPoolExecutor
-from mahotas.features.lbp import lbp
 
 """
 Referencias
@@ -18,7 +17,7 @@ https://www.kaggle.com/zeemeen/i-have-a-clue-what-i-am-doing-noise-patterns?scri
 http://scikit-image.org/docs/dev/auto_examples/filters/plot_denoise.html
 
 """
-NUMBER_OF_FEATURES = 195
+NUMBER_OF_FEATURES = 15 + 324
 class_dict = {
     'Motorola-Droid-Maxx': 0,
     'iPhone-4s': 1,
@@ -33,10 +32,10 @@ class_dict = {
 }
 
 
-def worker(procnum, image_path, image_class):
+def worker(procnum, image_path, image_class, image_name):
     print("Calculando features da imagem {}".format(procnum))
 
-    #image_path = "/home/CIT/bberton/Documents/unicamp/MC886/assignment2/data/train/Motorola-Droid-Maxx/(MotoMax)1.jpg"
+    # image_path = "/home/CIT/bberton/Documents/unicamp/MC886/assignment2/data/train/Motorola-Droid-Maxx/(MotoMax)1.jpg"
 
     image = None
     try:
@@ -45,7 +44,10 @@ def worker(procnum, image_path, image_class):
         print("File {} not found.".format(image_path))
         exit(0)
 
-    croped_image = img_as_float(crop_center(image, 512, 512))
+    if image_class:
+        croped_image = img_as_float(crop_center(image, 512, 512))
+    else:
+        croped_image = img_as_float(image)
 
     del image
 
@@ -56,9 +58,9 @@ def worker(procnum, image_path, image_class):
                                          np.array(noisy_image[:, :, 1]), \
                                          np.array(noisy_image[:, :, 2])
 
-    lbp_red_features = lbp(noisy_red, 2, 9)
-    lbp_green_features = lbp(noisy_green, 2, 9)
-    lbp_blue_features = lbp(noisy_blue, 2, 9)
+    lbp_red_features = lbp(noisy_red, 2, 10)
+    lbp_green_features = lbp(noisy_green, 2, 10)
+    lbp_blue_features = lbp(noisy_blue, 2, 10)
 
     features = [
         # red band
@@ -93,43 +95,30 @@ def worker(procnum, image_path, image_class):
         features.append(feature)
 
     # image class
-    features.append(class_dict[image_class])
+    if image_class:
+        features.append(class_dict[image_class])
+
+    if image_name:
+        features.append(image_name)
 
     print("Features da imagem {} calculadas!".format(procnum))
     return features
 
 
 def main():
-    pool = ThreadPoolExecutor(max_workers=8)
-    features = []
-    i = 0
-    for folder_class in os.listdir("/home/CIT/bberton/Documents/unicamp/MC886/assignment2/data/train"):
-        print("Class {} is number {}".format(folder_class, class_dict[folder_class]))
-        workers = []
+    extract_from_training = False
 
-        # if i >= 100:
-        #     break
+    if extract_from_training:
+        features = extract_training_features()
+    else:
+        features = extract_test_features()
 
-        for image_name in os.listdir(
-                "/home/CIT/bberton/Documents/unicamp/MC886/assignment2/data/train/{}/".format(folder_class)):
-            image_path = "/home/CIT/bberton/Documents/unicamp/MC886/assignment2/data/train/{}/{}".format(folder_class,
-                                                                                                         image_name)
-
-            td = pool.submit(worker, procnum=i, image_path=image_path, image_class=folder_class)
-            workers.append(td)
-            i += 1
-            #break
-
-        for worker_index in range(len(workers)):
-            features.append(workers[worker_index].result())
-
-        #break
-
-    features = np.array(features)
-
-    with open('features.csv', 'w') as csvfile:
+    with open('features-{}.csv'.format(extract_from_training), 'w') as csvfile:
         fieldnames = ["f{}".format(i) for i in range(1, NUMBER_OF_FEATURES + 1)]
-        fieldnames.append('image_class')
+        if extract_from_training:
+            fieldnames.append('image_class')
+        else:
+            fieldnames.append('image_name')
 
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -139,10 +128,58 @@ def main():
             for index, field_name in enumerate(fieldnames):
                 if field_name != 'image_class':
                     feature_dict[field_name] = feature[index]
-                else:
+                elif extract_from_training:
                     feature_dict[field_name] = int(feature[index])
+                else:
+                    feature_dict['image_name'] = feature[index]
 
             writer.writerow(feature_dict)
+
+
+def extract_training_features():
+    pool = ThreadPoolExecutor(max_workers=8)
+    features = []
+    i = 0
+    for folder_class in os.listdir("/home/CIT/bberton/Documents/unicamp/MC886/assignment2/data/train"):
+        print("Class {} is number {}".format(folder_class, class_dict[folder_class]))
+        workers = []
+
+        for image_name in os.listdir(
+                "/home/CIT/bberton/Documents/unicamp/MC886/assignment2/data/train/{}/".format(folder_class)):
+            image_path = "/home/CIT/bberton/Documents/unicamp/MC886/assignment2/data/train/{}/{}".format(folder_class,
+                                                                                                         image_name)
+
+            td = pool.submit(worker, procnum=i, image_path=image_path, image_class=folder_class, image_name=None)
+            workers.append(td)
+            i += 1
+            #break
+
+        for worker_index in range(len(workers)):
+            features.append(workers[worker_index].result())
+
+        #break
+
+    return np.array(features)
+
+
+def extract_test_features():
+    pool = ThreadPoolExecutor(max_workers=8)
+    features = []
+    workers = []
+
+    i = 0
+    for image_name in os.listdir(
+            "/home/CIT/bberton/Documents/unicamp/MC886/assignment2/data/test/"):
+        image_path = "/home/CIT/bberton/Documents/unicamp/MC886/assignment2/data/test/{}".format(image_name)
+
+        td = pool.submit(worker, procnum=i, image_path=image_path, image_class=None, image_name=image_name)
+        workers.append(td)
+        i += 1
+
+    for worker_index in range(len(workers)):
+        features.append(workers[worker_index].result())
+
+    return np.array(features)
 
 
 def crop_center(img, cropx, cropy):
