@@ -30,6 +30,9 @@ print('init\t\ttime\tinertia\thomo\tcompl\tv-meas\tARI\tAMI\tsilhouette')
 def bench_k_means(estimator, name, data):
     t0 = time()
     estimator.fit(data)
+    print(data.shape)
+    print(estimator.labels_)
+    print(len(estimator.labels_))
     print('%-9s\t%.2fs\t%i\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f'
           % (name, (time() - t0), estimator.inertia_,
              metrics.homogeneity_score(labels, estimator.labels_),
