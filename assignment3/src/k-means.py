@@ -8,8 +8,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.cluster import KMeans
 import os
-from sklearn.decomposition import PCA
+from sklearn.decomposition import TruncatedSVD
+from sklearn.preprocessing import Normalizer
+from sklearn.pipeline import make_pipeline
 import numpy as np
+from sklearn.metrics import silhouette_samples, silhouette_score
+import matplotlib.cm as cm
 
 # Tokenizer to return stemmed words, we use this
 def tokenize_and_stem(text_file):
@@ -29,9 +33,9 @@ def main():
     df.headline_text = df.headline_text.apply(lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
 
     # Using TFIDF vectorizer to convert convert words to Vector Space
-    tfidf_vectorizer = TfidfVectorizer(max_features=200000,
+    tfidf_vectorizer = TfidfVectorizer(max_features=5000,
                                        use_idf=True,
-                                       ngram_range=(3, 4),
+                                       # ngram_range=(3, 4),
                                        stop_words='english',
                                        tokenizer=tokenize_and_stem)
 
@@ -40,16 +44,31 @@ def main():
     terms = tfidf_vectorizer.get_feature_names()
     # print(terms)
 
+    # Vectorizer results are normalized, which makes KMeans behave as
+    # spherical k-means for better results. Since LSA/SVD results are
+    # not normalized, we have to redo the normalization.
+    svd = TruncatedSVD(400) # arbitrary - indicated on SVD documentation
+    normalizer = Normalizer(copy=False)
+    lsa = make_pipeline(svd, normalizer)
+
+    tfidf_matrix = lsa.fit_transform(tfidf_matrix)
+
+    explained_variance = svd.explained_variance_ratio_.sum()
+    print("Explained variance of the SVD step: {}%".format(
+        int(explained_variance * 100)))
+
     # Kmeans++
     np.random.seed(42)
     x = []
     y = []
 
-    for i in range(20, 40):
+    for i in range(2, 20):
         # reduced_data = PCA(n_components=2).fit_transform(tfidf_matrix)
         # print(reduced_data)
-        kmeans = KMeans(init='k-means++', n_clusters=i, n_init=10, random_state=3425)
+        kmeans = KMeans(init='k-means++', n_clusters=i, n_init=4, random_state=3425, max_iter=300)
         kmeans.fit(tfidf_matrix)
+        labels = kmeans.labels_
+        clusters = labels.tolist()
 
         # clusters centers
         centroids = kmeans.cluster_centers_
@@ -58,18 +77,20 @@ def main():
         print(error)
         x.append(i)
         y.append(error)
+        print "Solucao i ", i
 
     plt.scatter(x, y)
     plt.plot(x, y, '-o')
     plt.show()
 
-    # km = KMeans(n_clusters=7, init='k-means++', max_iter=300, n_init=1, verbose=0, random_state=3425)
-    # km.fit(tfidf_matrix)
-    # labels = km.labels_
-    # clusters = labels.tolist()
-    # print clusters
-    # # Calculating the distance measure derived from cosine similarity
-    # distance = 1 - cosine_similarity(tfidf_matrix)
+    best_k = 20 #for now just example
+    kmeans = KMeans(init='k-means++', n_clusters=best_k, n_init=4, random_state=3425, max_iter=300)
+    kmeans.fit(tfidf_matrix)
+    labels = kmeans.labels_
+    clusters = labels.tolist()
+
+    df = pd.DataFrame(dict(label=clusters, headline=df.headline_text))
+    df.to_csv('../results/kmeans_clustered_DF.txt', sep=',', index=False)
 
 if __name__ == '__main__':
     main()
