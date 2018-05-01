@@ -32,7 +32,7 @@ def main():
         lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
 
     # Using TFIDF vectorizer to convert convert words to Vector Space
-    tfidf_vectorizer = TfidfVectorizer(max_features=5000,
+    tfidf_vectorizer = TfidfVectorizer(max_features=20000,
                                        use_idf=True,
                                        stop_words='english',
                                        tokenizer=tokenize_and_stem)
@@ -43,7 +43,7 @@ def main():
     # Vectorizer results are normalized, which makes KMeans behave as
     # spherical k-means for better results. Since LSA/SVD results are
     # not normalized, we have to redo the normalization.
-    svd = TruncatedSVD(400)  # arbitrary - indicated on SVD documentation
+    svd = TruncatedSVD(50)  # arbitrary - indicated on SVD documentation
     normalizer = Normalizer(copy=False)
     lsa = make_pipeline(svd, normalizer)
 
@@ -56,21 +56,28 @@ def main():
     # Kmeans++
     np.random.seed(42)
     x = []
+    score = []
     y = []
 
-    for i in range(2, 120, 1):
+    for i in range(2, 100, 1):
         kmeans = MiniBatchKMeans(init='k-means++', n_clusters=i, random_state=3425, max_iter=300)
         kmeans.fit(tfidf_matrix)
 
         error = kmeans.inertia_
-        silhouette = metrics.silhouette_score(tfidf_matrix, kmeans.labels_, metric='euclidean', sample_size=300)
+        silhouette = metrics.silhouette_score(tfidf_matrix, kmeans.labels_, metric='euclidean', sample_size=1000)
 
         print("Cluster {}, error {}, silhouette {}".format(i, error, silhouette))
+        score.append(silhouette)
         x.append(i)
         y.append(error)
 
     plt.scatter(x, y)
     plt.plot(x, y, '-o')
+    plt.show()
+    plt.close()
+
+    plt.scatter(x, score)
+    plt.plot(x, score, '-o')
     plt.show()
 
     best_k = 46  # for now just example
@@ -80,7 +87,7 @@ def main():
     clusters = labels.tolist()
 
     df = pd.DataFrame(dict(label=clusters, headline=df.headline_text))
-    df.to_csv('kmeans_clustered_DF.txt', sep=',', index=False)
+    df.to_csv('kmeans_clustered_DF.csv', sep=',', index=False)
 
 
 if __name__ == '__main__':
