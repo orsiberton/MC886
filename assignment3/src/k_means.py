@@ -36,10 +36,10 @@ def main(year=2017, all=False, svd=False):
         lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
 
     # Using TFIDF vectorizer to convert convert words to Vector Space
-    tfidf_vectorizer = TfidfVectorizer(max_features=500,
+    tfidf_vectorizer = TfidfVectorizer(max_features=200,
                                        use_idf=True,
                                        # analyzer='char',
-                                       ngram_range=(1, 2),
+                                       ngram_range=(2, 3),
                                        # min_df=0.1,
                                        stop_words='english',
                                        tokenizer=tokenize_and_stem)
@@ -113,10 +113,10 @@ def main(year=2017, all=False, svd=False):
     labels = kmeans.labels_
     clusters = labels.tolist()
 
-    terms_per_doc = tfidf_vectorizer.inverse_transform(tfidf_matrix)
-    feature_phrases = map(lambda x: ' '.join(x), terms_per_doc)
+    # terms_per_doc = tfidf_vectorizer.inverse_transform(tfidf_matrix)
+    # feature_phrases = map(lambda x: ' '.join(x), terms_per_doc)
 
-    df = pd.DataFrame(dict(label=clusters, headline=feature_phrases))
+    df = pd.DataFrame(dict(label=clusters, headline=df.headline_text))
     if all:
         df.to_csv('kmeans_clustered_DF.csv', sep=',', index=False)
     else:
