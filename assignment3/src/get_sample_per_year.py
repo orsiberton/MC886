@@ -18,7 +18,7 @@ def main():
     print("Samples generated!")
 
 
-def get_sample(year=2017, number_of_samples=10000):
+def get_sample(year=2017, number_of_samples=5000):
     print("Generating sample for year {}".format(year))
 
     csv_file = csv.DictReader(open('../data/news_headlines_{}.csv'.format(year)))
@@ -32,6 +32,13 @@ def get_sample(year=2017, number_of_samples=10000):
     result = []
     for index in sample_indexes:
         result.append(news_per_year[index])
+
+    with open('../data/news_headlines_sample_{}.csv'.format(year), 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=['publish_date', 'headline_text'])
+        writer.writeheader()
+
+        for i in range(0, len(result)):
+                writer.writerow(result[i])
 
     return result
 
