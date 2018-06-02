@@ -3,12 +3,12 @@ import os
 import numpy as np
 from keras.models import load_model
 from keras.preprocessing.image import ImageDataGenerator
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 
 img_width, img_height = 256, 256
 
 # Returns a compiled model identical to the previous one
-model = load_model('inception_v3_flat_relu_soft.h5')
+model = load_model('inception_v3_pool_nodrop_soft.h5')
 
 train_dir = "../data/train/resized"
 val_dir = "../data/val/resized"
@@ -55,3 +55,11 @@ for file in sorted(os.listdir("../data/val")):
         y_true.append(int(file[0:2]))
 
 print(classification_report(y_true, y_pred, target_names=class_names))
+acc = accuracy_score(y_true, y_pred, normalize=True) * 100
+
+print(acc)
+
+prob = (1 / 83) * 100
+norm_acc = ((acc - prob) / (100 - prob)) * 100
+
+print(norm_acc)

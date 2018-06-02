@@ -1,12 +1,12 @@
+import matplotlib.pyplot as plt
+from keras import optimizers
 from keras.applications.inception_v3 import InceptionV3
 from keras.preprocessing.image import ImageDataGenerator
-from keras import optimizers
-import matplotlib.pyplot as plt
 
 img_width, img_height = 256, 256
 
 # create the base pre-trained model
-base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(img_width,img_height,3))
+base_model = InceptionV3(weights='imagenet', include_top=False, input_shape=(img_width, img_height, 3))
 
 train_dir = "../data/train/resized"
 val_dir = "../data/val/resized"
@@ -42,31 +42,31 @@ model.add(layers.Dense(83, activation='softmax'))
 model.summary()
 
 train_datagen = ImageDataGenerator(
-      rescale=1./255,
-      rotation_range=20,
-      width_shift_range=0.2,
-      height_shift_range=0.2,
-      horizontal_flip=True,
-      fill_mode='nearest')
+    rescale=1. / 255,
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest')
 
-validation_datagen = ImageDataGenerator(rescale=1./255)
+validation_datagen = ImageDataGenerator(rescale=1. / 255)
 
 # Change the batchsize according to your system RAM
 train_batchsize = 100
 val_batchsize = 10
 
 train_generator = train_datagen.flow_from_directory(
-        train_dir,
-        target_size=(img_width, img_height),
-        batch_size=train_batchsize,
-        class_mode='categorical')
+    train_dir,
+    target_size=(img_width, img_height),
+    batch_size=train_batchsize,
+    class_mode='categorical')
 
 validation_generator = validation_datagen.flow_from_directory(
-        val_dir,
-        target_size=(img_width, img_height),
-        batch_size=val_batchsize,
-        class_mode='categorical',
-        shuffle=False)
+    val_dir,
+    target_size=(img_width, img_height),
+    batch_size=val_batchsize,
+    class_mode='categorical',
+    shuffle=False)
 
 # Compile the model
 model.compile(loss='categorical_crossentropy',
@@ -75,12 +75,12 @@ model.compile(loss='categorical_crossentropy',
 
 # Train the model
 history = model.fit_generator(
-      train_generator,
-      steps_per_epoch=train_generator.samples/train_generator.batch_size ,
-      epochs=30,
-      validation_data=validation_generator,
-      validation_steps=validation_generator.samples/validation_generator.batch_size,
-      verbose=1)
+    train_generator,
+    steps_per_epoch=train_generator.samples / train_generator.batch_size,
+    epochs=30,
+    validation_data=validation_generator,
+    validation_steps=validation_generator.samples / validation_generator.batch_size,
+    verbose=1)
 
 # Save the model
 model.save('inception_v3_flat_relu_soft.h5')

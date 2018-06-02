@@ -1,26 +1,31 @@
+import os
+
 from PIL import Image
-import os, sys
 
-def resizeImage(base_dir, infile, output_dir="", size=(1024,768)):
-     outfile = os.path.splitext(infile)[0]+"_resized"
-     extension = os.path.splitext(infile)[1]
 
-     if (cmp(extension, ".jpg")):
-        return
+def resizeImage(base_dir, infile, output_dir="", size=(1024, 768), is_test=False):
+    outfile = os.path.splitext(infile)[0] + "_resized"
+    extension = os.path.splitext(infile)[1]
 
-     if infile != outfile:
-        try :
-            im = Image.open(base_dir +"/"+ infile)
+    if infile != outfile:
+        try:
+            im = Image.open(base_dir + "/" + infile)
             resized = im.resize(size, Image.ANTIALIAS)
-            if not os.path.exists(output_dir+"/"+infile[:2]):
-                os.mkdir(output_dir+"/"+infile[:2])
-            resized.save(output_dir+"/"+infile[:2]+"/"+outfile+extension,"JPEG")
-            print infile
+
+            if not is_test:
+                if not os.path.exists(output_dir + "/" + infile[:2]):
+                    os.mkdir(output_dir + "/" + infile[:2])
+                resized.save(output_dir + "/" + infile[:2] + "/" + outfile + extension, "JPEG")
+            else:
+                if not os.path.exists(output_dir):
+                    os.mkdir(output_dir)
+                resized.save(output_dir + "/" + outfile + extension, "JPEG")
+            print(infile)
         except IOError:
-            print "cannot reduce image for ", infile
+            print("cannot reduce image for {}".format(infile))
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     output_dir = "/resized"
 
     train_dir = "../data/train"
@@ -46,4 +51,4 @@ if __name__=="__main__":
         resizeImage(val_dir, file, val_dir_out, (256, 256))
 
     for file in os.listdir(test_dir):
-        resizeImage(test_dir, file, test_dir_out, (256, 256))
+        resizeImage(test_dir, file, test_dir_out, (256, 256), True)

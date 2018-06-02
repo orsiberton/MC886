@@ -6,7 +6,7 @@ from PIL import Image
 from keras.applications.inception_v3 import preprocess_input
 from keras.models import load_model
 from keras.preprocessing import image
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 
 images = {}
 csv_file = csv.DictReader(open("../data/MO444_dogs_test.csv"))
@@ -51,3 +51,11 @@ for file in sorted(os.listdir("../data/test")):
         y_true.append(images[file])
 
 print(classification_report(y_true, y_pred, target_names=class_names))
+acc = accuracy_score(y_true, y_pred, normalize=True) * 100
+
+print(acc)
+
+prob = (1 / 83) * 100
+norm_acc = ((acc - prob) / (100 - prob)) * 100
+
+print(norm_acc)
